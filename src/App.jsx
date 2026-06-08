@@ -125,12 +125,11 @@ export default function App() {
           </div>
           <div>
             <h1 className="font-bold text-lg tracking-wide">МИС «МедЭксперт»</h1>
-            <p className="text-xs text-slate-400">Дипломный проект • Филиппов И.П.</p>
           </div>
         </div>
 
         <div className="flex items-center gap-2 bg-slate-900 p-1.5 rounded-xl border border-slate-800">
-          <span className="text-xs font-semibold px-2 text-slate-400 uppercase tracking-wider">Ролевая модель:</span>
+          <span className="text-xs font-semibold px-2 text-slate-400 uppercase tracking-wider">Ролевая модель: </span>
           {[
             { id: 'admin', label: 'Администратор', color: 'bg-emerald-500 text-slate-950' },
             { id: 'doctor', label: 'Врач', color: 'bg-cyan-500 text-slate-950' },
