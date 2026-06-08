@@ -11,7 +11,6 @@ import {
   AlertCircle, 
   Download, 
   Lock,
-  ArrowRight,
   TrendingUp
 } from 'lucide-react';
 
@@ -97,7 +96,7 @@ export default function App() {
 
   const handleAddAppointment = async (e) => {
     e.preventDefault();
-    const patientIdVal = role === 'patient' ? 'P-101' : newAppointment.patientId;
+    const patientIdVal = role === 'patient' ? 1 : newAppointment.patientId; // Теперь ID первого пациента — это просто число 1
     if (!patientIdVal || !newAppointment.doctorId || !newAppointment.date || !newAppointment.time) return;
     const id = `A-${500 + appointments.length + 1}`;
 
