@@ -68,14 +68,13 @@ export default function App() {
     loadData();
   }, []);
 
-  const handleAddPatient = async (e) => {
+const handleAddPatient = async (e) => {
     e.preventDefault();
     if (!newPatient.name || !newPatient.phone) return;
-    const id = `P-${100 + patients.length + 1}`;
+    
     const hash = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
     
     const insertData = {
-      id,
       name: newPatient.name,
       birth_date: newPatient.birthDate,
       phone: newPatient.phone,
@@ -83,25 +82,24 @@ export default function App() {
       hash
     };
 
-    const { error } = await supabase.from('patients').insert([insertData]);
+    const { data, error } = await supabase.from('patients').insert([insertData]).select();
 
-    if (!error) {
-      setPatients([...patients, insertData]);
+    if (!error && data && data.length > 0) {
+      setPatients([...patients, data[0]]);
       setNewPatient({ name: '', birthDate: '', phone: '', policy: '' });
       showToast(`Пациент успешно зарегистрирован в базе данных.`);
     } else {
+      console.error(error);
       showToast(`Ошибка сохранения данных.`, 'error');
     }
   };
 
-  const handleAddAppointment = async (e) => {
+const handleAddAppointment = async (e) => {
     e.preventDefault();
-    const patientIdVal = role === 'patient' ? 1 : newAppointment.patientId; // Теперь ID первого пациента — это просто число 1
+    const patientIdVal = role === 'patient' ? 1 : newAppointment.patientId;
     if (!patientIdVal || !newAppointment.doctorId || !newAppointment.date || !newAppointment.time) return;
-    const id = `A-${500 + appointments.length + 1}`;
 
     const insertData = {
-      id,
       patient_id: patientIdVal,
       doctor_id: newAppointment.doctorId,
       date: newAppointment.date,
@@ -110,25 +108,24 @@ export default function App() {
       reminder_sent: false
     };
 
-    const { error } = await supabase.from('appointments').insert([insertData]);
+    const { data, error } = await supabase.from('appointments').insert([insertData]).select();
 
-    if (!error) {
-      setAppointments([...appointments, insertData]);
+    if (!error && data && data.length > 0) {
+      setAppointments([...appointments, data[0]]);
       setNewAppointment({ patientId: '', doctorId: '', date: '', time: '' });
       showToast(`Запись к врачу успешно создана.`);
     } else {
+      console.error(error);
       showToast(`Ошибка при записи к врачу.`, 'error');
     }
   };
 
-  const handleAddRecord = async (e) => {
+const handleAddRecord = async (e) => {
     e.preventDefault();
     if (!newRecord.patientId || !newRecord.doctorId || !newRecord.diagnosis || !newRecord.prescription) return;
-    const id = `R-${900 + records.length + 1}`;
     const today = new Date().toISOString().split('T')[0];
 
     const insertData = {
-      id,
       patient_id: newRecord.patientId,
       doctor_id: newRecord.doctorId,
       date: today,
@@ -136,13 +133,14 @@ export default function App() {
       prescription: newRecord.prescription
     };
 
-    const { error } = await supabase.from('records').insert([insertData]);
+    const { data, error } = await supabase.from('records').insert([insertData]).select();
 
-    if (!error) {
-      setRecords([...records, insertData]);
+    if (!error && data && data.length > 0) {
+      setRecords([...records, data[0]]);
       setNewRecord({ patientId: '', doctorId: '', diagnosis: '', prescription: '' });
       showToast(`Клиническая запись успешно добавлена.`);
     } else {
+      console.error(error);
       showToast(`Ошибка при сохранении медкарты.`, 'error');
     }
   };
@@ -495,7 +493,7 @@ export default function App() {
                           const pat = patients.find(p => p.id === app.patient_id);
                           const doc = doctors.find(d => d.id === app.doctor_id);
                           
-                          if (role === 'patient' && app.patient_id !== 'P-101') return null;
+                          if (role === 'patient' && app.patient_id !== 1) return null;
                           if (role === 'doctor' && app.doctor_id !== 'D-01') return null;
 
                           return (
