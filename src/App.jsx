@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   Activity, 
   User, 
@@ -11,47 +11,25 @@ import {
   AlertCircle, 
   Download, 
   Lock,
+  ArrowRight,
   TrendingUp
 } from 'lucide-react';
 
+import { supabase } from './supabaseClient';
 import DashboardStats from './components/DashboardStats';
 import PatientRegister from './components/PatientRegister';
 import AppointmentForm from './components/AppointmentForm';
 import MedicalRecords from './components/MedicalRecords';
 import './styles/main.css';
 
-const INITIAL_PATIENTS = [
-  { id: 'P-101', name: 'Иванов Петр Сергеевич', birthDate: '1988-05-12', phone: '+7 (911) 123-45-67', policy: '4509 1234 5678 9012', hash: '5f4dcc3b5aa765d61d8327deb882cf99' },
-  { id: 'P-102', name: 'Смирнова Анна Игоревна', birthDate: '1995-10-24', phone: '+7 (921) 987-65-43', policy: '1234 5678 9012 3456', hash: '8c7dd922ad47494fc02c388e12c00eac' },
-  { id: 'P-103', name: 'Кузнецов Дмитрий Васильевич', birthDate: '1974-03-03', phone: '+7 (905) 456-78-90', policy: '9876 5432 1098 7654', hash: '0d49495bc99a5c43d34f0d6cfcf8c7aa' }
-];
-
-const INITIAL_DOCTORS = [
-  { id: 'D-01', name: 'Амосова Вера Павловна', specialty: 'Терапевт', cabinet: '204', status: 'Активен' },
-  { id: 'D-02', name: 'Пирогов Илья Игоревич', specialty: 'Хирург', cabinet: '305', status: 'Активен' },
-  { id: 'D-03', name: 'Федоров Святослав Николаевич', specialty: 'Офтальмолог', cabinet: '102', status: 'На приёме' },
-  { id: 'D-04', name: 'Бехтерева Наталья Петровна', specialty: 'Невролог', cabinet: '411', status: 'Активен' }
-];
-
-const INITIAL_APPOINTMENTS = [
-  { id: 'A-501', patientId: 'P-101', doctorId: 'D-01', date: '2026-06-15', time: '09:00', status: 'Подтвержден', reminderSent: true },
-  { id: 'A-502', patientId: 'P-102', doctorId: 'D-03', date: '2026-06-15', time: '11:30', status: 'Подтвержден', reminderSent: true },
-  { id: 'A-503', patientId: 'P-103', doctorId: 'D-02', date: '2026-06-16', time: '14:00', status: 'Ожидает', reminderSent: false }
-];
-
-const INITIAL_RECORDS = [
-  { id: 'R-901', patientId: 'P-101', doctorId: 'D-01', date: '2026-05-10', diagnosis: 'ОРВИ, легкое течение', prescription: 'Амоксициллин 500мг 3р/день - 7 дней, обильное питье, витамин C.' },
-  { id: 'R-902', patientId: 'P-102', doctorId: 'D-03', date: '2026-05-12', diagnosis: 'Миопия слабой степени', prescription: 'Гимнастика для глаз, капли Тауфон 1кап 2р/день - 1 месяц.' }
-];
-
 export default function App() {
   const [role, setRole] = useState('admin');
   const [activeTab, setActiveTab] = useState('dashboard');
   
-  const [patients, setPatients] = useState(INITIAL_PATIENTS);
-  const [doctors] = useState(INITIAL_DOCTORS);
-  const [appointments, setAppointments] = useState(INITIAL_APPOINTMENTS);
-  const [records, setRecords] = useState(INITIAL_RECORDS);
+  const [patients, setPatients] = useState([]);
+  const [doctors, setDoctors] = useState([]);
+  const [appointments, setAppointments] = useState([]);
+  const [records, setRecords] = useState([]);
 
   const [notification, setNotification] = useState(null);
 
@@ -64,45 +42,127 @@ export default function App() {
     setTimeout(() => setNotification(null), 4000);
   };
 
-  const handleAddPatient = (e) => {
+  useEffect(() => {
+    async function loadData() {
+      const { data: pData } = await supabase.from('patients').select('*');
+      if (pData) setPatients(pData);
+
+      const { data: dData } = await supabase.from('doctors').select('*');
+      if (dData && dData.length > 0) {
+        setDoctors(dData);
+      } else {
+        const defaultDoctors = [
+          { id: 'D-01', name: 'Амосова Вера Павловна', specialty: 'Терапевт', cabinet: '204', status: 'Активен' },
+          { id: 'D-02', name: 'Пирогов Илья Игоревич', specialty: 'Хирург', cabinet: '305', status: 'Активен' },
+          { id: 'D-03', name: 'Федоров Святослав Николаевич', specialty: 'Офтальмолог', cabinet: '102', status: 'На приёме' },
+          { id: 'D-04', name: 'Бехтерева Наталья Петровна', specialty: 'Невролог', cabinet: '411', status: 'Активен' }
+        ];
+        setDoctors(defaultDoctors);
+      }
+
+      const { data: aData } = await supabase.from('appointments').select('*');
+      if (aData) setAppointments(aData);
+
+      const { data: rData } = await supabase.from('records').select('*');
+      if (rData) setRecords(rData);
+    }
+    loadData();
+  }, []);
+
+  const handleAddPatient = async (e) => {
     e.preventDefault();
     if (!newPatient.name || !newPatient.phone) return;
     const id = `P-${100 + patients.length + 1}`;
     const hash = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-    const updated = [...patients, { id, ...newPatient, hash }];
-    setPatients(updated);
-    setNewPatient({ name: '', birthDate: '', phone: '', policy: '' });
-    showToast(`Пациент ${id} успешно зарегистрирован. Данные сохранены.`);
+    
+    const insertData = {
+      id,
+      name: newPatient.name,
+      birth_date: newPatient.birthDate,
+      phone: newPatient.phone,
+      policy: newPatient.policy,
+      hash
+    };
+
+    const { error } = await supabase.from('patients').insert([insertData]);
+
+    if (!error) {
+      setPatients([...patients, insertData]);
+      setNewPatient({ name: '', birthDate: '', phone: '', policy: '' });
+      showToast(`Пациент успешно зарегистрирован в базе данных.`);
+    } else {
+      showToast(`Ошибка сохранения данных.`, 'error');
+    }
   };
 
-  const handleAddAppointment = (e) => {
+  const handleAddAppointment = async (e) => {
     e.preventDefault();
-    if (!newAppointment.patientId || !newAppointment.doctorId || !newAppointment.date || !newAppointment.time) return;
+    const patientIdVal = role === 'patient' ? 'P-101' : newAppointment.patientId;
+    if (!patientIdVal || !newAppointment.doctorId || !newAppointment.date || !newAppointment.time) return;
     const id = `A-${500 + appointments.length + 1}`;
-    const updated = [...appointments, { id, ...newAppointment, status: 'Ожидает', reminderSent: false }];
-    setAppointments(updated);
-    setNewAppointment({ patientId: '', doctorId: '', date: '', time: '' });
-    showToast(`Запись к врачу ${id} создана.`);
+
+    const insertData = {
+      id,
+      patient_id: patientIdVal,
+      doctor_id: newAppointment.doctorId,
+      date: newAppointment.date,
+      time: newAppointment.time,
+      status: 'Ожидает',
+      reminder_sent: false
+    };
+
+    const { error } = await supabase.from('appointments').insert([insertData]);
+
+    if (!error) {
+      setAppointments([...appointments, insertData]);
+      setNewAppointment({ patientId: '', doctorId: '', date: '', time: '' });
+      showToast(`Запись к врачу успешно создана.`);
+    } else {
+      showToast(`Ошибка при записи к врачу.`, 'error');
+    }
   };
 
-  const handleAddRecord = (e) => {
+  const handleAddRecord = async (e) => {
     e.preventDefault();
     if (!newRecord.patientId || !newRecord.doctorId || !newRecord.diagnosis || !newRecord.prescription) return;
     const id = `R-${900 + records.length + 1}`;
-    const updated = [...records, { id, ...newRecord, date: new Date().toISOString().split('T')[0] }];
-    setRecords(updated);
-    setNewRecord({ patientId: '', doctorId: '', diagnosis: '', prescription: '' });
-    showToast(`В электронную карту пациента добавлена новая запись.`);
+    const today = new Date().toISOString().split('T')[0];
+
+    const insertData = {
+      id,
+      patient_id: newRecord.patientId,
+      doctor_id: newRecord.doctorId,
+      date: today,
+      diagnosis: newRecord.diagnosis,
+      prescription: newRecord.prescription
+    };
+
+    const { error } = await supabase.from('records').insert([insertData]);
+
+    if (!error) {
+      setRecords([...records, insertData]);
+      setNewRecord({ patientId: '', doctorId: '', diagnosis: '', prescription: '' });
+      showToast(`Клиническая запись успешно добавлена.`);
+    } else {
+      showToast(`Ошибка при сохранении медкарты.`, 'error');
+    }
   };
 
-  const sendReminder = (id) => {
-    setAppointments(appointments.map(app => {
-      if (app.id === id) {
-        return { ...app, reminderSent: true };
-      }
-      return app;
-    }));
-    showToast(`СМС и Email уведомление отправлено пациенту.`, 'info');
+  const sendReminder = async (id) => {
+    const { error } = await supabase
+      .from('appointments')
+      .update({ reminder_sent: true })
+      .eq('id', id);
+
+    if (!error) {
+      setAppointments(appointments.map(app => {
+        if (app.id === id) {
+          return { ...app, reminder_sent: true };
+        }
+        return app;
+      }));
+      showToast(`Уведомление отправлено пациенту.`, 'info');
+    }
   };
 
   return (
@@ -125,11 +185,12 @@ export default function App() {
           </div>
           <div>
             <h1 className="font-bold text-lg tracking-wide">МИС «МедЭксперт»</h1>
+            <p className="text-xs text-slate-400">Дипломный проект • Филиппов И.П.</p>
           </div>
         </div>
 
         <div className="flex items-center gap-2 bg-slate-900 p-1.5 rounded-xl border border-slate-800">
-          <span className="text-xs font-semibold px-2 text-slate-400 uppercase tracking-wider">Ролевая модель: </span>
+          <span className="text-xs font-semibold px-2 text-slate-400 uppercase tracking-wider">Ролевая модель:</span>
           {[
             { id: 'admin', label: 'Администратор', color: 'bg-emerald-500 text-slate-950' },
             { id: 'doctor', label: 'Врач', color: 'bg-cyan-500 text-slate-950' },
@@ -273,8 +334,8 @@ export default function App() {
                       </thead>
                       <tbody className="divide-y divide-slate-800">
                         {appointments.slice(0, 3).map((app) => {
-                          const pat = patients.find(p => p.id === app.patientId);
-                          const doc = doctors.find(d => d.id === app.doctorId);
+                          const pat = patients.find(p => p.id === app.patient_id);
+                          const doc = doctors.find(d => d.id === app.doctor_id);
                           return (
                             <tr key={app.id} className="hover:bg-slate-900/50">
                               <td className="p-3 font-semibold text-emerald-400">{app.time}</td>
@@ -286,7 +347,7 @@ export default function App() {
                                 </span>
                               </td>
                               <td className="p-3">
-                                {app.reminderSent ? (
+                                {app.reminder_sent ? (
                                   <span className="text-xs text-emerald-400 flex items-center gap-1">
                                     <CheckCircle size={12} /> Отправлено
                                   </span>
@@ -364,7 +425,7 @@ export default function App() {
                           <tr key={p.id} className="hover:bg-slate-900/50">
                             <td className="p-3 font-semibold text-emerald-400">{p.id}</td>
                             <td className="p-3 font-medium">{p.name}</td>
-                            <td className="p-3">{p.birthDate}</td>
+                            <td className="p-3">{p.birth_date}</td>
                             <td className="p-3">{p.phone}</td>
                             <td className="p-3 font-mono text-[10px] text-slate-500 truncate max-w-[120px]" title={p.hash}>
                               {p.hash}
@@ -432,11 +493,11 @@ export default function App() {
                       </thead>
                       <tbody className="divide-y divide-slate-800">
                         {appointments.map((app) => {
-                          const pat = patients.find(p => p.id === app.patientId);
-                          const doc = doctors.find(d => d.id === app.doctorId);
+                          const pat = patients.find(p => p.id === app.patient_id);
+                          const doc = doctors.find(d => d.id === app.doctor_id);
                           
-                          if (role === 'patient' && app.patientId !== 'P-101') return null;
-                          if (role === 'doctor' && app.doctorId !== 'D-01') return null;
+                          if (role === 'patient' && app.patient_id !== 'P-101') return null;
+                          if (role === 'doctor' && app.doctor_id !== 'D-01') return null;
 
                           return (
                             <tr key={app.id} className="hover:bg-slate-900/50">
@@ -451,7 +512,7 @@ export default function App() {
                                 <span className="block text-xs text-slate-400">{app.time}</span>
                               </td>
                               <td className="p-3">
-                                {app.reminderSent ? (
+                                {app.reminder_sent ? (
                                   <span className="text-xs text-emerald-400 flex items-center gap-1">
                                     <CheckCircle size={14} /> Напоминание отправлено
                                   </span>
@@ -531,7 +592,7 @@ export default function App() {
                   <div>
                     <h3 className="font-bold text-lg flex items-center gap-2 text-cyan-400">
                       <Download />
-                      Экспорт медицинских реестров
+                      Экспорт medical-реестров
                     </h3>
                     <p className="text-xs text-slate-400 mt-2 leading-relaxed">
                       Сгенерированные отчеты содержат обезличенные персональные данные и соответствуют рекомендациям для последующего импорта.
