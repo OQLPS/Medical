@@ -96,12 +96,18 @@ const handleAddPatient = async (e) => {
 
 const handleAddAppointment = async (e) => {
     e.preventDefault();
-    const patientIdVal = role === 'patient' ? 1 : newAppointment.patientId;
-    if (!patientIdVal || !newAppointment.doctorId || !newAppointment.date || !newAppointment.time) return;
+    
+    // ВАЖНО: Если роль админ/врач, берем ID из формы и ПРИНУДИТЕЛЬНО переводим в число через Number()
+    const patientIdVal = role === 'patient' ? 1 : Number(newAppointment.patientId);
+    
+    if (!patientIdVal || !newAppointment.doctorId || !newAppointment.date || !newAppointment.time) {
+      showToast('Заполните все поля записи', 'error');
+      return;
+    }
 
     const insertData = {
-      patient_id: patientIdVal,
-      doctor_id: newAppointment.doctorId,
+      patient_id: patientIdVal, // Теперь здесь гарантированно число (например, 1), а не строка "1"
+      doctor_id: newAppointment.doctorId, // Здесь остается строка (например, 'D-01'), так как в SQL это TEXT
       date: newAppointment.date,
       time: newAppointment.time,
       status: 'Ожидает',
@@ -115,18 +121,22 @@ const handleAddAppointment = async (e) => {
       setNewAppointment({ patientId: '', doctorId: '', date: '', time: '' });
       showToast(`Запись к врачу успешно создана.`);
     } else {
-      console.error(error);
-      showToast(`Ошибка при записи к врачу.`, 'error');
+      // Выводим реальную ошибку в консоль браузера, чтобы её можно было прочитать
+      console.error("Критическая ошибка Supabase при записи:", error);
+      showToast(`Ошибка при записи к врачу. Проверьте консоль F12.`, 'error');
     }
   };
 
 const handleAddRecord = async (e) => {
     e.preventDefault();
-    if (!newRecord.patientId || !newRecord.doctorId || !newRecord.diagnosis || !newRecord.prescription) return;
+    if (!newRecord.patientId || !newRecord.doctorId || !newRecord.diagnosis || !newRecord.prescription) {
+      showToast('Заполните все поля медицинской карты', 'error');
+      return;
+    }
     const today = new Date().toISOString().split('T')[0];
 
     const insertData = {
-      patient_id: newRecord.patientId,
+      patient_id: Number(newRecord.patientId), // ОБЯЗАТЕЛЬНО переводим строку в число!
       doctor_id: newRecord.doctorId,
       date: today,
       diagnosis: newRecord.diagnosis,
@@ -140,8 +150,8 @@ const handleAddRecord = async (e) => {
       setNewRecord({ patientId: '', doctorId: '', diagnosis: '', prescription: '' });
       showToast(`Клиническая запись успешно добавлена.`);
     } else {
-      console.error(error);
-      showToast(`Ошибка при сохранении медкарты.`, 'error');
+      console.error("Критическая ошибка Supabase при сохранении карты:", error);
+      showToast(`Ошибка при сохранении медкарты. Проверьте консоль F12.`, 'error');
     }
   };
 
