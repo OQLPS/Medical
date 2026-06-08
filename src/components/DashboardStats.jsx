@@ -1,4 +1,4 @@
-import { Users, Activity, Calendar, FileText } from 'lucide-react';
+import { FileText } from 'lucide-react';
 
 export default function DashboardStats({ patientsCount, doctorsCount, appointmentsCount, recordsCount }) {
   return (
@@ -9,7 +9,6 @@ export default function DashboardStats({ patientsCount, doctorsCount, appointmen
           <h3 className="text-2xl font-black mt-1 text-slate-100">{patientsCount}</h3>
         </div>
         <div className="p-3 rounded-lg bg-emerald-500/10 text-emerald-400">
-          <Users size={20} />
         </div>
       </div>
 
@@ -19,7 +18,6 @@ export default function DashboardStats({ patientsCount, doctorsCount, appointmen
           <h3 className="text-2xl font-black mt-1 text-slate-100">{doctorsCount}</h3>
         </div>
         <div className="p-3 rounded-lg bg-cyan-500/10 text-cyan-400">
-          <Activity size={20} />
         </div>
       </div>
 
@@ -29,7 +27,6 @@ export default function DashboardStats({ patientsCount, doctorsCount, appointmen
           <h3 className="text-2xl font-black mt-1 text-slate-100">{appointmentsCount}</h3>
         </div>
         <div className="p-3 rounded-lg bg-indigo-500/10 text-indigo-400">
-          <Calendar size={20} />
         </div>
       </div>
 
